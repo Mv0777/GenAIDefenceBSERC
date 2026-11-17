@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M.Tech Capstone Architecture Decision Helper</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0b1120; color: #e2e8f0; margin: 0; padding: 20px; }
+  .container { max-width: 900px; margin: auto; }
+  .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+  h1 { color: #38bdf8; margin-top: 0; }
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+  .slider-box { background: #0f172a; padding: 14px; border-radius: 8px; }
+  input[type="range"] { width: 100%; }
+  .option-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #38bdf8; }
+  .rank-badge { background: #38bdf8; color: #0f172a; font-weight: bold; padding: 5px 10px; border-radius: 6px; margin-right: 12px; }
+  button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Capstone & Project Stack Decision Helper</h1>
+    <p style="color:#94a3b8;">Adjust priority weights below to live-rank the best architecture for your AI / ECE project.</p>
+    <div class="sliders">
+      <div class="slider-box">
+        <label>Offline Privacy Weight: <strong id="w-priv">8</strong>/10</label>
+        <input type="range" id="priv" min="1" max="10" value="8" oninput="rankOptions()">
+      </div>
+      <div class="slider-box">
+        <label>Zero Cost / Free Tier: <strong id="w-cost">9</strong>/10</label>
+        <input type="range" id="cost" min="1" max="10" value="9" oninput="rankOptions()">
+      </div>
+      <div class="slider-box">
+        <label>Low Latency / Speed: <strong id="w-speed">7</strong>/10</label>
+        <input type="range" id="speed" min="1" max="10" value="7" oninput="rankOptions()">
+      </div>
+      <div class="slider-box">
+        <label>Ease of Deployment: <strong id="w-ease">6</strong>/10</label>
+        <input type="range" id="ease" min="1" max="10" value="6" oninput="rankOptions()">
+      </div>
+    </div>
+    <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="setPreset('student')">Preset: Student Zero-Budget</button>
+      <button onclick="setPreset('privacy')">Preset: 100% Local Offline</button>
+      <button onclick="setPreset('speed')">Preset: Real-Time Edge</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Live Ranked Recommendations</h2>
+    <div id="ranking-list"></div>
+  </div>
+</div>
+
+<script>
+  const stacks = [
+    { name: "Local Browser WebAssembly + IndexedDB", desc: "Runs 100% offline in browser with zero server cost.", priv: 10, cost: 10, speed: 8, ease: 9 },
+    { name: "Local Ollama + Python RAG Pipeline", desc: "Full local LLM inference on laptop GPU/CPU.", priv: 10, cost: 10, speed: 6, ease: 6 },
+    { name: "Cloud API + Vector DB (Managed)", desc: "Fastest responses and easy setup, requires internet & API keys.", priv: 4, cost: 6, speed: 9, ease: 10 },
+    { name: "Edge Microcontroller (ESP32 / FPGA)", desc: "Ultra-low latency hardware execution for ECE signal tasks.", priv: 10, cost: 8, speed: 10, ease: 4 }
+  ];
+
+  function setPreset(type) {
+    if (type === 'student') { priv.value = 7; cost.value = 10; speed.value = 6; ease.value = 9; }
+    if (type === 'privacy') { priv.value = 10; cost.value = 9; speed.value = 6; ease.value = 6; }
+    if (type === 'speed')   { priv.value = 8; cost.value = 7; speed.value = 10; ease.value = 5; }
+    rankOptions();
+  }
+
+  function rankOptions() {
+    const wp = parseInt(document.getElementById("priv").value);
+    const wc = parseInt(document.getElementById("cost").value);
+    const ws = parseInt(document.getElementById("speed").value);
+    const we = parseInt(document.getElementById("ease").value);
+
+    document.getElementById("w-priv").innerText = wp;
+    document.getElementById("w-cost").innerText = wc;
+    document.getElementById("w-speed").innerText = ws;
+    document.getElementById("w-ease").innerText = we;
+
+    const scored = stacks.map(s => {
+      const total = s.priv * wp + s.cost * wc + s.speed * ws + s.ease * we;
+      const maxPossible = 10 * (wp + wc + ws + we);
+      const pct = Math.round((total / maxPossible) * 100);
+      return { ...s, score: pct };
+    }).sort((a, b) => b.score - a.score);
+
+    const list = document.getElementById("ranking-list");
+    list.innerHTML = "";
+    scored.forEach((item, idx) => {
+      list.innerHTML += `
+        <div class="option-row">
+          <div>
+            <span class="rank-badge">#${idx + 1}</span>
+            <strong>${item.name}</strong>
+            <div style="color:#94a3b8; font-size:0.9rem; margin-top:4px;">${item.desc}</div>
+          </div>
+          <div style="font-size:1.3rem; font-weight:bold; color:#38bdf8;">${item.score}%</div>
+        </div>
+      `;
+    });
+  }
+
+  rankOptions();
+</script>
+</body>
+</html>

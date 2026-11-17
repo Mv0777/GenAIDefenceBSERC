@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Monthly Money Explorer</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #0f172a; margin: 0; padding: 20px; }
+  .wrap { max-width: 920px; margin: auto; }
+  .header { background: #1e293b; color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
+  .stat { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  .stat h3 { margin: 0; font-size: 0.9rem; color: #64748b; }
+  .stat p { margin: 8px 0 0; font-size: 1.6rem; font-weight: bold; }
+  .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+  .dup-badge { background: #fef08a; color: #854d0e; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+  button { background: #2563eb; color: white; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  button.danger { background: #dc2626; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .bar-bg { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; }
+  .bar-val { height: 100%; background: #2563eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1 style="margin:0;font-size:1.4rem;">Personal Money & Expense Explorer</h1>
+      <small style="color:#94a3b8;">Sample Student Budget • Duplicate Detector • Savings Simulator</small>
+    </div>
+    <div>
+      <button onclick="resetData()">Reset Sample Data</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="stat"><h3>Monthly Allowance</h3><p>₹12,000</p></div>
+    <div class="stat"><h3>Total Filtered Spend</h3><p id="total-spend">₹0</p></div>
+    <div class="stat"><h3>Target Savings (<span id="sav-pct">25</span>%)</h3><p id="sav-amt" style="color:#16a34a;">₹3,000</p></div>
+    <div class="stat"><h3>Remaining Safe Budget</h3><p id="rem-budget">₹0</p></div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
+      <div style="flex:1; min-width:240px;">
+        <label><strong>Adjust Monthly Savings Target:</strong> <span id="slider-label">25%</span></label><br>
+        <input type="range" id="savingsSlider" min="5" max="60" value="25" style="width:100%; margin-top:8px;" oninput="updateAll()">
+      </div>
+      <div>
+        <label><strong>Filter by Category:</strong></label><br>
+        <select id="catFilter" onchange="updateAll()" style="padding:8px; margin-top:6px; border-radius:6px;">
+          <option value="ALL">All Categories</option>
+          <option value="Food">Food & Cafe</option>
+          <option value="Commute">Metro & Bus Commute</option>
+          <option value="Books">Books & Printouts</option>
+          <option value="Subscriptions">Subscriptions</option>
+        </select>
+      </div>
+      <div>
+        <label><strong>Search Merchant:</strong></label><br>
+        <input type="text" id="searchBox" placeholder="e.g. Metro, Bakingo..." oninput="updateAll()" style="padding:8px; margin-top:6px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:1.1rem;">Category Breakdown</h2>
+    <div id="category-bars"></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0; font-size:1.1rem;">Transactions & Possible Duplicates</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th><th>Status / Action</th></tr></thead>
+      <tbody id="tx-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const initialTx = [
+    { id: 1, date: "02 Nov", merchant: "GMCBL Bus & Metro Card", cat: "Commute", amt: 1200, dup: false },
+    { id: 2, date: "05 Nov", merchant: "Campus Canteen & Snacks", cat: "Food", amt: 650, dup: false },
+    { id: 3, date: "08 Nov", merchant: "Cloud Storage Plan", cat: "Subscriptions", amt: 499, dup: true },
+    { id: 4, date: "08 Nov", merchant: "Cloud Storage Plan", cat: "Subscriptions", amt: 499, dup: true },
+    { id: 5, date: "11 Nov", merchant: "Lab Manual & Spiral Binding", cat: "Books", amt: 420, dup: false },
+    { id: 6, date: "14 Nov", merchant: "Pizza & Bakery Order", cat: "Food", amt: 890, dup: false },
+    { id: 7, date: "16 Nov", merchant: "IEEE Digital Library Pass", cat: "Books", amt: 750, dup: false }
+  ];
+  let transactions = JSON.parse(JSON.stringify(initialTx));
+
+  function removeTx(id) {
+    transactions = transactions.filter(t => t.id !== id);
+    updateAll();
+  }
+
+  function confirmLegit(id) {
+    const t = transactions.find(x => x.id === id);
+    if (t) t.dup = false;
+    updateAll();
+  }
+
+  function resetData() {
+    transactions = JSON.parse(JSON.stringify(initialTx));
+    document.getElementById("catFilter").value = "ALL";
+    document.getElementById("searchBox").value = "";
+    document.getElementById("savingsSlider").value = 25;
+    updateAll();
+  }
+
+  function updateAll() {
+    const pct = parseInt(document.getElementById("savingsSlider").value);
+    const cat = document.getElementById("catFilter").value;
+    const query = document.getElementById("searchBox").value.toLowerCase();
+
+    document.getElementById("slider-label").innerText = pct + "%";
+    document.getElementById("sav-pct").innerText = pct;
+
+    const allowance = 12000;
+    const targetSav = Math.round((pct / 100) * allowance);
+    document.getElementById("sav-amt").innerText = "₹" + targetSav.toLocaleString();
+
+    const filtered = transactions.filter(t =>
+      (cat === "ALL" || t.cat === cat) &&
+      t.merchant.toLowerCase().includes(query)
+    );
+
+    const totalSpend = filtered.reduce((acc, t) => acc + t.amt, 0);
+    const allSpend = transactions.reduce((acc, t) => acc + t.amt, 0);
+    const rem = allowance - targetSav - allSpend;
+
+    document.getElementById("total-spend").innerText = "₹" + totalSpend.toLocaleString();
+    const remEl = document.getElementById("rem-budget");
+    remEl.innerText = "₹" + rem.toLocaleString();
+    remEl.style.color = rem < 0 ? "#dc2626" : "#16a34a";
+
+    // Render table
+    const tbody = document.getElementById("tx-body");
+    tbody.innerHTML = "";
+    filtered.forEach(t => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${t.date}</td>
+        <td>${t.merchant}</td>
+        <td>${t.cat}</td>
+        <td><strong>₹${t.amt}</strong></td>
+        <td>${t.dup ? `<span class="dup-badge">Duplicate?</span> <button onclick="confirmLegit(${t.id})">Keep</button> <button class="danger" onclick="removeTx(${t.id})">Delete</button>` : "Verified"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Render category bars
+    const cats = ["Food", "Commute", "Books", "Subscriptions"];
+    const barsDiv = document.getElementById("category-bars");
+    barsDiv.innerHTML = "";
+    cats.forEach(c => {
+      const sum = transactions.filter(t => t.cat === c).reduce((a, b) => a + b.amt, 0);
+      const width = Math.min(100, Math.round((sum / 5000) * 100));
+      barsDiv.innerHTML += `
+        <div class="bar-row">
+          <div style="width:120px;font-weight:600;">${c}</div>
+          <div class="bar-bg"><div class="bar-val" style="width:${width}%"></div></div>
+          <div style="width:70px;text-align:right;">₹${sum}</div>
+        </div>
+      `;
+    });
+  }
+
+  updateAll();
+</script>
+</body>
+</html>

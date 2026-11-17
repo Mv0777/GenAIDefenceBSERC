@@ -1,0 +1,12 @@
+# Week 1 - Project 2: Thinking in HTML (Ordered Prompts)
+
+## Page 1: ECE Revision & Study Dashboard (`1_ece_revision_dashboard.html`)
+1. Prompt 1: "Create a single-file interactive HTML study dashboard for an M.Tech ECE student preparing for exams. Include a live exam countdown timer, a subject filter dropdown (DSP, VLSI, Comm), a topic checklist with a live progress bar, interactive formula flip-cards, a daily study hours slider with dynamic advice, and a scored multiple-choice quiz. Output one complete HTML file."
+2. Prompt 2: "Ensure all buttons, checkboxes, and flip-cards work cleanly on both desktop and mobile viewports with zero external dependencies."
+
+## Page 2: Personal Money & Expense Explorer (`2_money_explorer.html`)
+1. Prompt 1: "Build a single-file interactive HTML monthly expense explorer for a student using realistic sample data. Include a monthly savings target slider that recalculates target savings and remaining safe budget live, a category filter dropdown, a merchant search box, visual category breakdown bars, and a duplicate transaction detector with Keep/Delete buttons and a Reset button."
+2. Prompt 2: "Highlight negative remaining budgets in red and format currency in INR (₹)."
+
+## Page 3: Capstone Architecture Decision Helper (`3_decision_helper.html`)
+1. Prompt 1: "Create a single-file interactive HTML decision helper that compares 4 technical project stacks (Local Browser WebAssembly, Local Ollama RAG, Managed Cloud API, and Edge Microcontroller). Add 4 priority sliders (Offline Privacy, Zero Cost, Low Latency, Ease of Deployment) that recalculate weighted percentage match scores and re-rank the options live, plus 3 one-click scenario preset buttons."

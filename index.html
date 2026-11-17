@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Auto Rally - 3 Lap Racing</title>
+<style>
+  body { margin: 0; background: #0f172a; color: white; font-family: system-ui, sans-serif; text-align: center; overflow: hidden; }
+  canvas { background: #1e293b; display: block; margin: auto; max-width: 100%; }
+  .hud { display: flex; justify-content: space-around; padding: 10px; background: #020617; font-weight: bold; }
+  .controls { display: flex; justify-content: space-between; padding: 12px 24px; background: #020617; }
+  button { padding: 14px 28px; font-size: 1.1rem; border-radius: 10px; border: none; background: #facc15; color: #0f172a; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="hud">
+  <span id="lapTxt">Lap: 1/3</span>
+  <span id="coinTxt">Coins: 0</span>
+  <span id="timeTxt">Time: 0.0s</span>
+  <span id="bestTxt">Best: --</span>
+</div>
+<canvas id="gameCanvas" width="380" height="520"></canvas>
+<div class="controls">
+  <button ontouchstart="moveLeft()" onclick="moveLeft()">◀ Left</button>
+  <button style="background:#38bdf8;" onclick="resetGame()">Restart</button>
+  <button ontouchstart="moveRight()" onclick="moveRight()">Right ▶</button>
+</div>
+
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const lanes = [75, 190, 305];
+  let laneIdx = 1, coins = 0, distance = 0, lap = 1, startTime = Date.now(), gameOver = false;
+  let items = [];
+  let bestTime = localStorage.getItem("auto_rally_best");
+  if (bestTime) document.getElementById("bestTxt").innerText = "Best: " + bestTime + "s";
+
+  function moveLeft() { if (laneIdx > 0) laneIdx--; }
+  function moveRight() { if (laneIdx < 2) laneIdx++; }
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") moveLeft();
+    if (e.key === "ArrowRight") moveRight();
+  });
+
+  function resetGame() {
+    laneIdx = 1; coins = 0; distance = 0; lap = 1; startTime = Date.now(); gameOver = false; items = [];
+  }
+
+  function spawnItem() {
+    const lane = Math.floor(Math.random() * 3);
+    const type = Math.random() < 0.65 ? "coin" : "cone";
+    items.push({ lane, y: -30, type });
+  }
+
+  let frame = 0;
+  function loop() {
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Road & lane lines
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(30, 0, 320, canvas.height);
+    ctx.strokeStyle = "#94a3b8";
+    ctx.setLineDash([20, 20]);
+    ctx.lineDashOffset = -frame * 6;
+    [135, 245].forEach(x => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); });
+    ctx.setLineDash([]);
+
+    if (!gameOver) {
+      distance += 5;
+      lap = Math.min(3, Math.floor(distance / 1500) + 1);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      document.getElementById("lapTxt").innerText = `Lap: ${lap}/3`;
+      document.getElementById("coinTxt").innerText = `Coins: ${coins}`;
+      document.getElementById("timeTxt").innerText = `Time: ${elapsed}s`;
+
+      if (distance >= 4500) {
+        gameOver = true;
+        if (!bestTime || parseFloat(elapsed) < parseFloat(bestTime)) {
+          bestTime = elapsed;
+          localStorage.setItem("auto_rally_best", bestTime);
+          document.getElementById("bestTxt").innerText = "Best: " + bestTime + "s";
+        }
+      }
+
+      if (frame % 35 === 0) spawnItem();
+
+      const autoX = lanes[laneIdx], autoY = 430;
+      items.forEach((it, i) => {
+        it.y += 6;
+        const ix = lanes[it.lane];
+        if (it.type === "coin") {
+          ctx.fillStyle = "#facc15";
+          ctx.beginPath(); ctx.arc(ix, it.y, 12, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(ix - 15, it.y - 15, 30, 30);
+        }
+
+        if (Math.abs(ix - autoX) < 25 && Math.abs(it.y - autoY) < 35) {
+          if (it.type === "coin") { coins++; items.splice(i, 1); }
+          else { distance = Math.max(0, distance - 250); items.splice(i, 1); }
+        }
+      });
+
+      // Draw Auto Rickshaw
+      ctx.fillStyle = "#16a34a";
+      ctx.fillRect(autoX - 22, autoY - 30, 44, 60);
+      ctx.fillStyle = "#facc15";
+      ctx.fillRect(autoX - 20, autoY - 25, 40, 26);
+    } else {
+      ctx.fillStyle = "white";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillText("3 Laps Complete!", 95, 240);
+      ctx.font = "18px sans-serif";
+      ctx.fillText(`Coins: ${coins} | Best: ${bestTime}s`, 95, 275);
+    }
+
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>
