@@ -37,4 +37,4 @@
 ### Section D: Video, Skills & Design
 7. **Project 16 — Custom Agent Skill (`SKILL.md`):** Reusable `/one-page-revision` skill that transforms dense technical chapters into scannable one-page formula, trade-off, and viva sheets.
 8. **Project 17 — Same Page, New Design:** Side-by-side `before.html` and `after.html` redesign for TECHNOVA 2026 preserving identical copy while upgrading layout, typography, and glassmorphic visual hierarchy.
-9. 
+   
