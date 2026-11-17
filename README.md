@@ -1,3 +1,4 @@
+##https://notebooklm.link.google/JBANfFX6dZVv
 # GenAIDefenceBSERC
 2weeksprojects
 # Def-Space Artificial Intelligence Internship 2026 (BSERC GenAI)
